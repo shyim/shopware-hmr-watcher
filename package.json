@@ -1,0 +1,74 @@
+{
+  "name": "shopware-hmr-watcher",
+  "version": "0.1.0",
+  "description": "Standalone Shopware Administration watcher with Rspack and hot updates for Twig, Vue, components, overrides, and mixins",
+  "type": "module",
+  "bin": {
+    "shopware-admin-watch": "bin/shopware-admin-watch.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "start": "node bin/shopware-admin-watch.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "check": "npm run lint && npm test",
+    "benchmark": "node scripts/benchmark.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "profile": "node scripts/profile.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@babel/parser": "^7.29.11",
+    "@rspack/core": "^2.2.9",
+    "@rspack/dev-server": "^2.2.1",
+    "@vue/compiler-sfc": "^3.5.22",
+    "css-loader": "^7.1.5",
+    "dotenv": "^18.0.9",
+    "dotenv-expand": "^12.0.3",
+    "events": "^3.3.0",
+    "fast-glob": "^3.3.3",
+    "jiti": "^2.7.0",
+    "magic-string": "^0.30.21",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10",
+    "rspack-vue-loader": "^17.7.1",
+    "sass-embedded": "^1.106.1",
+    "sass-loader": "^17.0.1",
+    "style-loader": "^4.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@rsdoctor/cli": "^2.0.0",
+    "@rsdoctor/core": "^2.0.0",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "puppeteer-core": "^25.16.0",
+    "vue": "^3.5.22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shyim/shopware-hmr-watcher.git"
+  },
+  "homepage": "https://github.com/shyim/shopware-hmr-watcher#readme",
+  "bugs": {
+    "url": "https://github.com/shyim/shopware-hmr-watcher/issues"
+  },
+  "author": "Soner Sayakci",
+  "keywords": [
+    "shopware",
+    "administration",
+    "rspack",
+    "hmr",
+    "vue",
+    "twig"
+  ]
+}
