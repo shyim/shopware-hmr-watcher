@@ -25,7 +25,7 @@ test(
   'serves multiple compilers, proxies the API and rebuilds an extension independently',
   { timeout: 60000 },
   async (t) => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sw-rspack-watch-'));
+    const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'sw-rspack-watch-')));
     const admin = path.join(root, 'admin');
     const source = path.join(root, 'extension/src');
     fs.mkdirSync(path.join(admin, 'src'), { recursive: true });
@@ -155,16 +155,33 @@ test(
       },
     );
     const adminBeforeExtensionEdit = await (await fetch(`${base}/administration.js`)).text();
+    const globModule = path.join(source, 'glob.ts');
+    fs.writeFileSync(globModule, 'export default {};');
     const build = nextBuild(watcher.compiler);
-    fs.writeFileSync(entry, 'window.extensionValue = "after-edit";');
+    fs.writeFileSync(
+      entry,
+      'import modules from "./glob"; window.discovered = modules; window.extensionValue = "after-edit";',
+    );
     await build;
     assert.match(await (await fetch(extensionUrl)).text(), /after-edit/);
     assert.equal(await (await fetch(`${base}/administration.js`)).text(), adminBeforeExtensionEdit);
     assert.ok(originalAdmin.length > 0);
+    // An entry with no source-filter keywords must still watch auto-discovered overrides.
+    const override = path.join(source, 'Example.override.vue');
     let pending = nextBuild(watcher.compiler);
+    fs.writeFileSync(override, '<template><p>auto-discovered-override</p></template>');
+    await pending;
+    const withOverride = await (await fetch(extensionUrl)).text();
+    assert.match(withOverride, /auto-discovered-override/);
+    assert.match(withOverride, /registerOverrideComponent/);
+    pending = nextBuild(watcher.compiler);
+    fs.unlinkSync(override);
+    await pending;
+    assert.doesNotMatch(await (await fetch(extensionUrl)).text(), /auto-discovered-override/);
+    pending = nextBuild(watcher.compiler);
     fs.writeFileSync(
-      entry,
-      `window.discovered = import.meta.glob('./modules/*.ts', { eager: true });`,
+      globModule,
+      `export default import.meta.glob('./modules/**/*.ts', { eager: true });`,
     );
     await pending;
     const discovered = path.join(source, 'modules/new.ts');
@@ -176,6 +193,24 @@ test(
     fs.unlinkSync(discovered);
     await pending;
     assert.ok(!(await (await fetch(extensionUrl)).text()).includes('new-glob-module'));
+    pending = nextBuild(watcher.compiler);
+    fs.writeFileSync(discovered, 'export const value = "recreated-glob-module";');
+    await pending;
+    assert.match(await (await fetch(extensionUrl)).text(), /recreated-glob-module/);
+    pending = nextBuild(watcher.compiler);
+    fs.mkdirSync(path.join(source, 'modules/nested'));
+    fs.writeFileSync(
+      path.join(source, 'modules/nested/new.ts'),
+      'export const value = "nested-glob-module";',
+    );
+    await pending;
+    assert.match(await (await fetch(extensionUrl)).text(), /nested-glob-module/);
+    pending = nextBuild(watcher.compiler);
+    fs.writeFileSync(globModule, 'export default { value: "no-longer-a-glob" };');
+    await pending;
+    const withoutGlob = await (await fetch(extensionUrl)).text();
+    assert.match(withoutGlob, /no-longer-a-glob/);
+    assert.doesNotMatch(withoutGlob, /nested-glob-module|recreated-glob-module/);
 
     assert.equal(
       fs.existsSync(path.join(root, 'var/cache/shopware-admin-rspack')),

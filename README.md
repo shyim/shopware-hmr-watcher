@@ -150,7 +150,19 @@ Keep each compiler's output public path and runtime name distinct. Extension ent
 
 ## Performance and profiling
 
-The watcher uses native Rspack JavaScript parsing, SWC for TypeScript, and Sass's `modern-compiler` API. Shared dependencies are extracted between async chunks within each compiler, while extension entries stay self-contained. Persistent caches live in the Shopware installation's `var/cache/shopware-admin-rspack-cache` directory.
+The watcher uses Rspack 2.3's native JavaScript parsing, SWC for TypeScript, and Sass's `modern-compiler` API. Content filters skip the custom source loader for files without Shopware imports, globs, or component/mixin definitions. Extension entries and Shopware's HMR integration files always run through the loader. Shared dependencies are extracted between async chunks within each compiler, while extension entries stay self-contained.
+
+The native file watcher is enabled by default; `--poll` uses Watchpack for polling mounted or network filesystems. Persistent caches use Rspack's experimental `newCache` implementation and live in the Shopware installation's `var/cache/shopware-admin-rspack-cache` directory. `--no-cache` retains memory caching without reading or writing the disk cache. Per-loader caching is not enabled because the current Vue loader strips that option when cloning rules.
+
+To switch back to the previous cache or file watcher, use the [custom configuration hook](#custom-configuration):
+
+```js
+export default function configure(config) {
+  config.experiments.newCache = false;
+  config.experiments.nativeWatcher = false;
+  return config;
+}
+```
 
 Run these commands from a watcher checkout to compare a fresh compilation with cached restarts:
 

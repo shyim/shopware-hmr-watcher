@@ -88,9 +88,23 @@ export function createConfigurations(project, options = {}) {
     const extension = index > 0;
     const name = definition.technicalName;
     const publicPath = extension ? `/_internal_ext/${name}/` : '/';
+    // These files also perform path-based transforms or register directory
+    // dependencies, even when their contents do not match the source filter.
+    const unfilteredSources = [
+      path.join(admin, 'src/app/adapter/view/vue.adapter.ts'),
+      path.join(admin, 'src/core/factory/template.factory.js'),
+      path.join(admin, 'src/core/factory/async-component.factory.ts'),
+      ...(extension ? [definition.entry] : []),
+    ];
+    const sourceLoader = {
+      loader: loader('source'),
+      options: { admin, extension, entry: definition.entry, sourceRoot: definition.source },
+    };
     const config = {
       name,
       mode: 'development',
+      // Watchpack remains the polling fallback for mounted/network filesystems.
+      experiments: { newCache: true, nativeWatcher: !options.poll },
       cache:
         options.cache === false
           ? true
@@ -153,23 +167,21 @@ export function createConfigurations(project, options = {}) {
       externals: extension ? { vue: ['Shopware', 'Vue'] } : {},
       module: {
         rules: [
-          {
+          ...[false, true].map((filtered) => ({
             test: /\.[cm]?[jt]s$/,
-            exclude: /node_modules/,
+            include: filtered ? undefined : unfilteredSources,
+            exclude: filtered ? [/node_modules/, ...unfilteredSources] : /node_modules/,
             resourceQuery: { not: [/raw|url|worker/] },
             enforce: 'pre',
             use: [
               {
-                loader: loader('source'),
-                options: {
-                  admin,
-                  extension,
-                  entry: definition.entry,
-                  sourceRoot: definition.source,
-                },
+                ...sourceLoader,
+                ...(filtered
+                  ? { codeFilter: /import\.meta\.glob|shopware:|\b(?:Component|Mixin)\b/ }
+                  : {}),
               },
             ],
-          },
+          })),
           {
             test: /\.vue$/,
             exclude: /node_modules/,

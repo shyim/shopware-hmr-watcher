@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/parser": "^7.29.11",
-    "@rspack/core": "^2.2.9",
+    "@rspack/core": "^2.3.0",
     "@rspack/dev-server": "^2.2.1",
     "@vue/compiler-sfc": "^3.5.22",
     "css-loader": "^7.1.5",
